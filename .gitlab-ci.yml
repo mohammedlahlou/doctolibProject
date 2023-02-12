@@ -1,0 +1,42 @@
+image: openjdk:11.0.18-jdk
+
+stages:
+  - test
+  - deploy
+
+before_script:
+  - PATH=/opt/apache-maven-3.8.6/bin:/usr/local/openjdk-11/bin:$PATH
+  - JAVA_HOME=/usr/local/openjdk-11
+
+test-all:
+  stage: test
+  tags: [maven]
+  except:
+    - master
+    - main
+  script:
+    - mvn clean install
+
+test-unit:
+  stage: test
+  tags: [maven]
+  only:
+    - master
+    - main
+  script:
+    - mvn clean package
+    - cp target/doctolibProject*.jar doctolibProject-${CI_COMMIT_SHA}.jar
+  artifacts:
+    name: doctolibProject
+    expire_in: 1 week
+    paths:
+      - doctolibProject-${CI_COMMIT_SHA}.jar
+
+deploy:
+  stage: deploy
+  needs: [test-unit]
+  only:
+    - master
+    - main
+  script:
+    - ls doctolibProject*.jar
